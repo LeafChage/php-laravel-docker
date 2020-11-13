@@ -1,0 +1,44 @@
+version: '3'
+services:
+  app:
+    container_name: demo-app
+    build:
+      context: $PWD/docker/app
+      dockerfile: dockerfile/local.Dockerfile
+    ports:
+      - 9997:9997
+    env_file: $PWD/docker/app/env/local.env
+    volumes:
+      - /var/run/php-fpm
+      - $PWD/docker/app/bin/wait.sh:/wait.sh
+      - $PWD/app:/var/www/html
+      - $PWD/docker/app/php-fpm.d/www.conf:/usr/local/etc/php-fpm.d/zzz-www.conf
+    command: sh /wait.sh
+
+  db:
+    container_name: demo-db
+    image: mysql:5.7.22
+    ports:
+      - 4306:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: chage
+      MYSQL_PASSWORD: password
+      MYSQL_DATABASE: demo
+    volumes:
+      - $PWD/docker/db/conf.d/local.my.cnf:/etc/mysql/conf.d/my.cnf
+
+  web:
+    container_name: demo-web
+    build:
+      context: $PWD/docker/web
+      dockerfile: dockerfile/local.Dockerfile
+    ports:
+      - 80:80
+    volumes:
+      - $PWD/docker/web/nginx/local.nginx.conf:/etc/nginx/nginx.conf
+      - $PWD/docker/web/nginx/conf.d/local.default.conf:/etc/nginx/conf.d/default.conf
+    volumes_from:
+      - app
+    depends_on:
+      - app
